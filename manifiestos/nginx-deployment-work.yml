@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-worker
+  template:
+    metadata:
+      labels:
+        app: nginx-worker
+    spec:
+      nodeName: k8s-node1
+      containers:
+      - name: nginx
+        image: nginx:stable
+        ports:
+        - containerPort: 80

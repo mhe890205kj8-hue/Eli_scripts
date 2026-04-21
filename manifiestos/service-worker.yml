@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-worker-service
+  namespace: default
+spec:
+  ports:
+  - nodePort: ${NODE_PORT}
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: nginx-worker
+  sessionAffinity: None
+  type: NodePort
