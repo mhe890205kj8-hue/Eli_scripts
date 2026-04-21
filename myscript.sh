@@ -60,3 +60,4 @@ kubectl create -f custom-resources.yaml
 kubectl taint nodes k8scp node-role.kubernetes.io/control-plane:NoSchedule-
 kubectl create deployment nginx-demo --image=nginx
 kubectl expose deployment nginx-demo --type=NodePort --port=80 --target-port=80 --name=nginx-service
+#cambio jijitl
