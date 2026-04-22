@@ -2,7 +2,7 @@
 #script de prueba para kubernetes
 
 POD_CIDR=$1
-$SSH_key_path=$2
+SSH_key_path=$2
 NODE_PORT=$3
 SERVICE_TEMPLATE="nginx-service-demo.yaml.tpl"
 SERVICE_FILE="nginx-service-demo.yaml"
