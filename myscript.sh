@@ -59,9 +59,13 @@ containerd config default |  tee /etc/containerd/config.toml >/dev/null
  
  systemctl enable --now kubelet
  kubeadm init --pod-network-cidr="$POD_CIDR"
-mkdir -p $HOME/.kube
- cp /etc/kubernetes/admin.conf $HOME/.kube/config
- chown $(id -u):$(id -g) $HOME/.kube/config
+
+export KUBECONFIG=/etc/kubernetes/admin.conf
+install -d -m 700 /home/admin_lab/.kube
+install -m 600 -o admin_lab -g admin_lab /etc/kubernetes/admin.conf /home/admin_lab/.kube/config
+install -d -m 700 /home/admin_user/.kube
+install -m 600 -o admin_user -g admin_user /etc/kubernetes/admin.conf /home/admin_user/.kube/config
+
 kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.31.4/manifests/operator-crds.yaml
 kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.31.4/manifests/tigera-operator.yaml
 curl -O https://raw.githubusercontent.com/projectcalico/calico/v3.31.4/manifests/custom-resources.yaml
@@ -80,8 +84,7 @@ if (( NODE_PORT < 30000 || NODE_PORT > 32767 )); then
   echo "Error: NODE_PORT debe estar entre 30000 y 32767."
   exit 1
 fi
-
 export NODE_PORT
+cd Eli_scripts/manifiestos
 envsubst < "$SERVICE_TEMPLATE" > "$SERVICE_FILE"
-
 kubectl apply -f "$SERVICE_FILE"
