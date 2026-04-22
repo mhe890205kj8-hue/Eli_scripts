@@ -24,6 +24,7 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
  apt-get update
  apt-get install -y apt-transport-https ca-certificates curl gpg
+ apt-get install -y gettext-base
  swapoff -a
  sed -i.bak '/\sswap\s/s/^/#/' /etc/fstab #hay que revisar
 cat <<EOF |  tee /etc/modules-load.d/k8s.conf
@@ -68,10 +69,6 @@ kubectl wait --for=condition=Ready node --all --timeout=600s
 kubectl taint nodes --all node-role.kubernetes.io/control-plane- || true
 kubectl create deployment nginx-demo --image=nginx
 #kubectl expose deployment nginx-demo --type=NodePort --port=80 --target-port=80 --name=nginx-service
-NODE_PORT="${1:-30080}"
-SERVICE_TEMPLATE="nginx-service.yaml.tpl"
-SERVICE_FILE="nginx-service.yaml"
-
 if ! [[ "$NODE_PORT" =~ ^[0-9]+$ ]]; then
   echo "Error: NODE_PORT debe ser un número."
   exit 1
@@ -81,8 +78,6 @@ if (( NODE_PORT < 30000 || NODE_PORT > 32767 )); then
   echo "Error: NODE_PORT debe estar entre 30000 y 32767."
   exit 1
 fi
-
-sudo apt-get install -y gettext-base
 
 export NODE_PORT
 envsubst < "$SERVICE_TEMPLATE" > "$SERVICE_FILE"
