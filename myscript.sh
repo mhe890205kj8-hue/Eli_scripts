@@ -14,7 +14,7 @@ set -euo pipefail
  mkdir -p /home/admin_user/.ssh
  chmod 700 /home/admin_user/.ssh
  touch /home/admin_user/.ssh/authorized_keys
- install -m 600 -o admin_user -g admin_user $SSH_key_path /home/admin_user/.ssh/authorized_keys
+ install -m 600 -o admin_user -g admin_user "$SSH_key_path" /home/admin_user/.ssh/authorized_keys
  chmod 600 /home/admin_user/.ssh/authorized_keys
  chown -R admin_user:admin_user /home/admin_user/.ssh
 
@@ -61,11 +61,10 @@ containerd config default |  tee /etc/containerd/config.toml >/dev/null
  kubeadm init --pod-network-cidr="$POD_CIDR"
 
 export KUBECONFIG=/etc/kubernetes/admin.conf
-install -d -m 700 /home/admin_lab/.kube
+install -d -m 700 -o admin_lab -g admin_lab /home/admin_lab/.kube
 install -m 600 -o admin_lab -g admin_lab /etc/kubernetes/admin.conf /home/admin_lab/.kube/config
-install -d -m 700 /home/admin_user/.kube
+install -d -m 700 -o admin_user -g admin_user /home/admin_user/.kube
 install -m 600 -o admin_user -g admin_user /etc/kubernetes/admin.conf /home/admin_user/.kube/config
-
 kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.31.4/manifests/operator-crds.yaml
 kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.31.4/manifests/tigera-operator.yaml
 curl -O https://raw.githubusercontent.com/projectcalico/calico/v3.31.4/manifests/custom-resources.yaml
