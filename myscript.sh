@@ -1,14 +1,13 @@
 #! /bin/bash
 #script de prueba para kubernetes
 
-#creacion del usuario admin_user y configuracion de ssh para que pueda acceder sin contraseña al nodo master y worker.
-
 POD_CIDR=$1
 $SSH_key_path=$2
 NODE_PORT=$3
 SERVICE_TEMPLATE="nginx-service-demo.yaml.tpl"
 SERVICE_FILE="nginx-service-demo.yaml"
 
+#creacion del usuario admin_user y configuracion de ssh para que pueda acceder sin contraseña al nodo master y worker.
 set -euo pipefail
  adduser --disabled-password --gecos "" admin_user
  usermod -aG sudo admin_user
@@ -20,13 +19,22 @@ set -euo pipefail
  chown -R admin_user:admin_user /home/admin_user/.ssh
 
 
-#Instalacion de containerd y configuracion del sistema para kubernetes.
+#Instalacion de paquetes necesarios para kubernetes, configuracion de containerd y kubeadm, y despliegue de nginx como prueba de funcionamiento del cluster.
 export DEBIAN_FRONTEND=noninteractive
- apt-get update
- apt-get install -y apt-transport-https ca-certificates curl gpg
- apt-get install -y gettext-base
- swapoff -a
- sed -i.bak '/\sswap\s/s/^/#/' /etc/fstab #hay que revisar
+mkdir -p -m 755 /etc/apt/keyrings
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.35/deb/Release.key |  gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.35/deb/ /' |  tee /etc/apt/sources.list.d/kubernetes.list
+apt-get update
+apt-get install -y \
+  kubelet kubeadm kubectl \
+  apt-transport-https ca-certificates curl gpg \
+  gettext-base \
+  containerd \
+  git
+ apt-mark hold kubelet kubeadm kubectl
+git clone https://github.com/mhe890205kj8-hue/Eli_scripts.git #revisar si esta bien en este punto del script
+swapoff -a
+sed -i.bak '/\sswap\s/s/^/#/' /etc/fstab 
 cat <<EOF |  tee /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
@@ -39,7 +47,6 @@ net.bridge.bridge-nf-call-ip6tables = 1
 net.ipv4.ip_forward = 1
 EOF
  sysctl --system
- apt install -y containerd
  mkdir -p /etc/containerd
 containerd config default |  tee /etc/containerd/config.toml >/dev/null
  sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
@@ -49,12 +56,7 @@ containerd config default |  tee /etc/containerd/config.toml >/dev/null
   echo "containerd no está activo"
   exit 1
 }
- mkdir -p -m 755 /etc/apt/keyrings
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.35/deb/Release.key |  gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.35/deb/ /' |  tee /etc/apt/sources.list.d/kubernetes.list
- apt update
- apt install -y kubelet kubeadm kubectl
- apt-mark hold kubelet kubeadm kubectl
+ 
  systemctl enable --now kubelet
  kubeadm init --pod-network-cidr="$POD_CIDR"
 mkdir -p $HOME/.kube
