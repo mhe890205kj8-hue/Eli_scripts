@@ -2,7 +2,8 @@
 # Script de prueba para Kubernetes
 # Descripción:
 #   Configura un nodo master con kubeadm, instala containerd y Calico,
-#   despliega un deployment nginx-demo y crea un servicio NodePort para acceso.
+#   despliega un deployment nginx-demo y crea un servicio NodePort usando plantillas.
+#   Genera los manifiestos a partir de archivos .tpl con envsubst.
 # Uso:
 #   ./myscript.sh <POD_CIDR> <SSH_KEY_PATH> <NODE_PORT>
 #     POD_CIDR      - rango de red de pods para el cluster (por ejemplo: 192.168.0.0/16)
@@ -10,12 +11,14 @@
 #     NODE_PORT     - puerto NodePort para exponer el servicio nginx-demo
 # Requisitos:
 #   - ejecutar como root en una distribución Debian/Ubuntu compatible
-#   - tener acceso a internet para descargar paquetes y manifiestos
+#   - tener acceso a internet para descargar paquetes, manifiestos y el repositorio de plantillas
 #   - swap debe estar deshabilitado o será desactivado por el script
 #
 POD_CIDR=$1
 SSH_key_path=$2
 NODE_PORT=$3
+DEPLOYMENT_TEMPLATE="nginx-deployment-demo.yml.tpl"
+DEPLOYMENT_FILE="nginx-deployment-demo.yml"
 SERVICE_TEMPLATE="nginx-service-demo.yml.tpl"
 SERVICE_FILE="nginx-service-demo.yml"
 
@@ -48,6 +51,7 @@ apt-get install -y \
   containerd \
   git
  apt-mark hold kubelet kubeadm kubectl
+# Clona el repositorio de plantillas para usar los manifiestos de deployment y servicio.
 git clone https://github.com/mhe890205kj8-hue/Eli_scripts.git 
 swapoff -a
 sed -i.bak '/\sswap\s/s/^/#/' /etc/fstab 
@@ -80,7 +84,7 @@ containerd config default |  tee /etc/containerd/config.toml >/dev/null
 export KUBECONFIG=/etc/kubernetes/admin.conf
 
 # Copia el fichero de configuración a los directorios .kube de admin_lab y admin_user.
-# Nota: el usuario admin_lab debe existir si se quiere usar esta configuración.
+# Nota: el usuario admin_lab no se crea en este script; si no existe este paso fallará.
 install -d -m 700 -o admin_lab -g admin_lab /home/admin_lab/.kube
 install -m 600 -o admin_lab -g admin_lab /etc/kubernetes/admin.conf /home/admin_lab/.kube/config
 install -d -m 700 -o admin_user -g admin_user /home/admin_user/.kube
@@ -96,10 +100,6 @@ kubectl create -f custom-resources.yaml
 kubectl wait --for=condition=Ready node --all --timeout=600s
 kubectl taint nodes --all node-role.kubernetes.io/control-plane- || true
 
-# Crea un deployment nginx-demo de prueba en el cluster.
-kubectl create deployment nginx-demo --image=nginx
-#kubectl expose deployment nginx-demo --type=NodePort --port=80 --target-port=80 --name=nginx-service
-
 # Valida que el puerto NodePort sea un número válido dentro del rango permitido.
 if ! [[ "$NODE_PORT" =~ ^[0-9]+$ ]]; then
   echo "Error: NODE_PORT debe ser un número."
@@ -111,6 +111,10 @@ if (( NODE_PORT < 30000 || NODE_PORT > 32767 )); then
   exit 1
 fi
 export NODE_PORT
+
+# Genera los manifiestos a partir de las plantillas y aplica el deployment y el servicio.
 cd Eli_scripts/manifiestos
+envsubst < "$DEPLOYMENT_TEMPLATE" > "$DEPLOYMENT_FILE"
+kubectl apply -f "$DEPLOYMENT_FILE"
 envsubst < "$SERVICE_TEMPLATE" > "$SERVICE_FILE"
 kubectl apply -f "$SERVICE_FILE"
