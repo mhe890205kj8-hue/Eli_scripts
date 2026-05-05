@@ -17,10 +17,8 @@
 POD_CIDR=$1
 SSH_key_path=$2
 NODE_PORT=$3
-DEPLOYMENT_TEMPLATE="nginx-deployment-demo.yml.tpl"
-DEPLOYMENT_FILE="nginx-deployment-demo.yml"
-SERVICE_TEMPLATE="nginx-service-demo.yml.tpl"
-SERVICE_FILE="nginx-service-demo.yml"
+HELM_RELEASE_NAME="nginx-demo"
+HELM_CHART_PATH="Eli_scripts/charts/nginx-demo"
 
 # Asegura que el script falle inmediatamente en caso de error, uso de variable no inicializada o fallo en un pipe.
 set -euo pipefail
@@ -47,9 +45,10 @@ apt-get update
 apt-get install -y \
   kubelet kubeadm kubectl \
   apt-transport-https ca-certificates curl gpg \
-  gettext-base \
   containerd \
   git
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+helm version
  apt-mark hold kubelet kubeadm kubectl
 # Clona el repositorio de plantillas para usar los manifiestos de deployment y servicio.
 git clone https://github.com/mhe890205kj8-hue/Eli_scripts.git 
@@ -110,11 +109,11 @@ if (( NODE_PORT < 30000 || NODE_PORT > 32767 )); then
   echo "Error: NODE_PORT debe estar entre 30000 y 32767."
   exit 1
 fi
+
+
 export NODE_PORT
 
-# Genera los manifiestos a partir de las plantillas y aplica el deployment y el servicio.
-cd Eli_scripts/manifiestos
-envsubst < "$DEPLOYMENT_TEMPLATE" > "$DEPLOYMENT_FILE"
-kubectl apply -f "$DEPLOYMENT_FILE"
-envsubst < "$SERVICE_TEMPLATE" > "$SERVICE_FILE"
-kubectl apply -f "$SERVICE_FILE"
+# Despliega nginx-demo usando Helm.
+helm upgrade --install "$HELM_RELEASE_NAME" "$HELM_CHART_PATH" \
+  --namespace default \
+  --set service.nodePort="$NODE_PORT"
