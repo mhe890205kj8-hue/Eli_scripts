@@ -17,8 +17,6 @@
 POD_CIDR=$1
 SSH_key_path=$2
 NODE_PORT=$3
-HELM_RELEASE_NAME="nginx-demo"
-HELM_CHART_PATH="Eli_scripts/charts/nginx-demo"
 
 # Asegura que el script falle inmediatamente en caso de error, uso de variable no inicializada o fallo en un pipe.
 set -euo pipefail
@@ -113,7 +111,3 @@ fi
 
 export NODE_PORT
 
-# Despliega nginx-demo usando Helm.
-helm upgrade --install "$HELM_RELEASE_NAME" "$HELM_CHART_PATH" \
-  --namespace default \
-  --set service.nodePort="$NODE_PORT"
