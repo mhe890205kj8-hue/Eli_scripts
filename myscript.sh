@@ -126,9 +126,3 @@ kubectl taint nodes --all node-role.kubernetes.io/control-plane- || true
 
 echo "Nodo Kubernetes listo."
 echo "Helm instalado correctamente."
-echo ""
-echo "Puedes probar tus charts manualmente, por ejemplo:"
-echo "  helm create nginx-demo"
-echo "  helm template nginx-demo ./nginx-demo"
-echo "  helm install nginx-demo ./nginx-demo"
-echo "  kubectl get pods,svc"
