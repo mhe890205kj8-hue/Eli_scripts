@@ -13,9 +13,9 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: "stable"
 
-  containerPort: 80
+containerPort: 80
 
-  nodeName: "k8scp"
+nodeName: "k8scp"
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
