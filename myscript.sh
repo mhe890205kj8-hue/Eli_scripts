@@ -117,6 +117,19 @@ kubeadm init --pod-network-cidr="$POD_CIDR"
 # Exporta el kubeconfig de administrador para que kubectl use el cluster recién creado.
 export KUBECONFIG=/etc/kubernetes/admin.conf
 
+for USERNAME in admin_lab admin_user; do
+  if id "$USERNAME" &>/dev/null; then
+    USER_HOME=$(eval echo "~$USERNAME")
+
+    install -d -m 700 -o "$USERNAME" -g "$USERNAME" "$USER_HOME/.kube"
+    install -m 600 -o "$USERNAME" -g "$USERNAME" /etc/kubernetes/admin.conf "$USER_HOME/.kube/config"
+
+    echo "Kubeconfig configurado para $USERNAME en $USER_HOME/.kube/config"
+  else
+    echo "Usuario $USERNAME no existe, se omite kubeconfig."
+  fi
+done
+
 # Copia el kubeconfig para admin_lab si el usuario existe.
 if id "admin_lab" &>/dev/null; then
   install -d -m 700 -o admin_lab -g admin_lab /home/admin_lab/.kube
@@ -140,6 +153,10 @@ kubectl create -f custom-resources.yaml
 
 # Espera a que el nodo esté listo.
 kubectl wait --for=condition=Ready node --all --timeout=600s
+
+# Permite programar pods en el nodo control-plane para laboratorio de un solo nodo.
+kubectl taint nodes --all node-role.kubernetes.io/control-plane- || true
+kubectl taint nodes --all node-role.kubernetes.io/master- || true
 
 # Instala Argo CD
 kubectl create namespace argocd || true
@@ -250,10 +267,6 @@ kubectl get application "$APP_NAME" -n "$ARGOCD_NAMESPACE" || true
 echo "Recursos creados en namespace ${APP_NAMESPACE}:"
 kubectl get pods -n "$APP_NAMESPACE" || true
 kubectl get svc -n "$APP_NAMESPACE" || true
-
-
-# Permite programar pods en el nodo control-plane para laboratorio de un solo nodo.
-kubectl taint nodes --all node-role.kubernetes.io/control-plane- || true
 
 echo "Nodo Kubernetes listo."
 echo "Helm instalado correctamente."
