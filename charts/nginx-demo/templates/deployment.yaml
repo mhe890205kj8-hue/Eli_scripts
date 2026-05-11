@@ -17,6 +17,8 @@ spec:
       {{- if .Values.nodeName }}
       nodeName: {{ .Values.nodeName }}
       {{- end }}
+      imagePullSecrets:
+      {{- toYaml .Values.imagePullSecrets | nindent 8 }}
       containers:
         - name: nginx
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
