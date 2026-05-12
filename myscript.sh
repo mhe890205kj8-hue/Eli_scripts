@@ -142,6 +142,9 @@ kubectl create -f custom-resources.yaml
 # Espera a que el nodo esté listo.
 kubectl wait --for=condition=Ready node --all --timeout=600s
 
+# Permite programar pods en el nodo control-plane para laboratorio de un solo nodo.
+kubectl taint nodes --all node-role.kubernetes.io/control-plane- || true
+
 # Instala Argo CD
 kubectl create namespace argocd || true
 
