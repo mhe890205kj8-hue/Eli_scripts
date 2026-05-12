@@ -9,7 +9,7 @@ spec:
   sources:
     - repoURL: eliacr.azurecr.io/helm
       chart: nginx-demo
-      targetRevision: 0.1.1
+      targetRevision: 0.1.2
       helm:
         releaseName: nginx-demo
         valueFiles:
