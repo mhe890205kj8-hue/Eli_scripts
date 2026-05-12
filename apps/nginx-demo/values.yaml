@@ -11,8 +11,7 @@ image:
   # This sets the pull policy for images.
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "stable"
-
+  tag: "0.1.1"
 
 nodeName: "k8scp"
 
