@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nginx-demo
+  namespace: argocd
+spec:
+  project: default
+
+  sources:
+    - repoURL: eliacr.azurecr.io/helm
+      chart: nginx-demo
+      targetRevision: 0.1.0
+      helm:
+        releaseName: nginx-demo
+        valueFiles:
+          - $values/apps/nginx-demo/values.yaml
+
+    - repoURL: https://github.com/mhe890205kj8-hue/Eli_scripts.git
+      targetRevision: main
+      ref: values
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nginx-demo
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
