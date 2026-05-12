@@ -17,9 +17,9 @@
 
 set -euo pipefail
 
-if [ "$#" -ne 11 ]; then
+if [ "$#" -ne 12 ]; then
   echo "Uso:"
-  echo "  $0 <POD_CIDR> <SSH_KEY_PATH> <ACR_LOGIN_SERVER> <ACR_USERNAME> <ACR_PASSWORD> <CHART_REPO_PATH> <CHART_NAME> <CHART_VERSION> <IMAGE_REPOSITORY> <IMAGE_TAG> <APP_NAMESPACE>"
+  echo "  $0 <POD_CIDR> <SSH_KEY_PATH> <ACR_LOGIN_SERVER> <ACR_USERNAME> <ACR_PASSWORD> <CHART_REPO_PATH> <CHART_NAME> <CHART_VERSION> <IMAGE_REPOSITORY> <IMAGE_TAG> <APP_NAMESPACE> <ARGOCD_APPLICATION_FILE>"
   exit 1
 fi
 
@@ -34,6 +34,7 @@ CHART_VERSION=$8
 IMAGE_REPOSITORY=$9
 IMAGE_TAG=${10}
 APP_NAMESPACE=${11}
+ARGOCD_APPLICATION_FILE=${12}
 
 APP_NAME="${CHART_NAME}"
 ARGOCD_NAMESPACE="argocd"
@@ -160,7 +161,7 @@ echo "Argo CD instalado correctamente."
 
 kubectl patch svc argocd-server -n argocd \
   -p '{"spec": {"type": "NodePort"}}'
-
+  
 # ------------------------------------------------------------
 # Configura despliegue GitOps con Argo CD + Helm chart en ACR
 # ------------------------------------------------------------
@@ -200,60 +201,15 @@ stringData:
   enableOCI: "true"
 EOF
 
-echo "Creando Application de Argo CD para desplegar ${CHART_NAME}..."
-cat <<EOF | kubectl apply -f -
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: ${APP_NAME}
-  namespace: ${ARGOCD_NAMESPACE}
-spec:
-  project: default
-
-  source:
-    repoURL: ${ACR_LOGIN_SERVER}/${CHART_REPO_PATH}
-    chart: ${CHART_NAME}
-    targetRevision: ${CHART_VERSION}
-    helm:
-      releaseName: ${APP_NAME}
-      valuesObject:
-        replicaCount: 1
-        image:
-          repository: ${IMAGE_REPOSITORY}
-          tag: "${IMAGE_TAG}"
-          pullPolicy: IfNotPresent
-        imagePullSecrets:
-          - name: ${ACR_PULL_SECRET_NAME}
-        service:
-          type: NodePort
-          port: 80
-          nodePort: 30080
-
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: ${APP_NAMESPACE}
-
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-EOF
+echo "Aplicando definición externa de Argo CD Application..."
+kubectl apply -f "$ARGOCD_APPLICATION_FILE"
 
 echo "Esperando a que Argo CD procese la aplicación..."
 sleep 20
 
-echo "Estado de la Application:"
-kubectl get application "$APP_NAME" -n "$ARGOCD_NAMESPACE" || true
+echo "Applications de Argo CD:"
+kubectl get applications -n "$ARGOCD_NAMESPACE" || true
 
 echo "Recursos creados en namespace ${APP_NAMESPACE}:"
 kubectl get pods -n "$APP_NAMESPACE" || true
 kubectl get svc -n "$APP_NAMESPACE" || true
-
-
-# Permite programar pods en el nodo control-plane para laboratorio de un solo nodo.
-kubectl taint nodes --all node-role.kubernetes.io/control-plane- || true
-
-echo "Nodo Kubernetes listo."
-echo "Helm instalado correctamente."
